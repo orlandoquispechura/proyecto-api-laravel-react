@@ -11,25 +11,48 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
+        // validamos las entradas de login
+        $credenciales = $request->validate([
+            "email" => "required|email",
+            "password" => "required"
         ]);
-        //verificar usuario si existe
-        $user = User::where("email", "=", $request->email)->first();
-        if (isset($user)) {
-            if (Hash::check($request->password, $user->password)) {
-                $token = $user->createToken("auth_token")->plainTextToken;
-                return response()->json(['mensaje' => 'Iniciaste sesión', 
-                                    'access_token' => $token,
-                                    'usuario' => $user ], 200);
-            } else {
-                return response()->json(['mensaje' => 'La contraseña es incorrecta']);
-            }
-        } else {
-            return response()->json(['mensaje' => 'Usuario no existe!!!']);
+        
+        if (!Auth::attempt($credenciales)) {
+            return response()->json(["mensaje" => "No Autenticado"], 401);
         }
+        //generamos el token con sanctum
+        $user = Auth::user();
+        $token = $user->createToken("auth_token")->plainTextToken;
+
+        //responder al fronentd
+        return response()->json([
+            "access_token" => $token,
+            "token_type" => "Bearer",
+            "usuario" => $user
+        ]);
     }
+
+
+
+    // $request->validate([
+    //     'email' => 'required|email',
+    //     'password' => 'required'
+    // ]);
+    // //verificar usuario si existe
+    // $user = User::where("email", "=", $request->email)->first();
+    // if (isset($user)) {
+    //     if (Hash::check($request->password, $user->password)) {
+    //         $token = $user->createToken("auth_token")->plainTextToken;
+    //         return response()->json(['mensaje' => 'Iniciaste sesión', 
+    //                             'access_token' => $token,
+    //                             'usuario' => $user ], 200);
+    //     } else {
+    //         return response()->json(['mensaje' => 'La contraseña es incorrecta']);
+    //     }
+    // } else {
+    //     return response()->json(['mensaje' => 'Usuario no existe!!!']);
+    // }
+
     public function register(Request $request)
     {
         //validar datos
